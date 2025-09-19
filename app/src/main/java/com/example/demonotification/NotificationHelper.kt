@@ -7,6 +7,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.BitmapFactory
 import android.media.AudioAttributes
 import android.net.Uri
 import android.os.Build
@@ -92,9 +93,22 @@ class NotificationHelper(private val context: Context) {
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .setOnlyAlertOnce(true)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
             .setContentIntent(mainPendingIntent)
             .addAction(R.drawable.twotone_4g_plus_mobiledata_24, "Mở Google", googlePendingIntent)
+
+        if (notificationId == 100) {
+            // Dùng BigPictureStyle cho thông báo ngay lập tức
+            val bitmap = BitmapFactory.decodeResource(context.resources, R.drawable.broad_image)
+            builder.setStyle(
+                NotificationCompat.BigPictureStyle()
+                    .bigPicture(bitmap)
+                    .setBigContentTitle(title)
+                    .setSummaryText(message)
+            )
+        } else {
+            builder.setStyle(NotificationCompat.BigTextStyle().bigText(message))
+        }
+
 
         try {
             NotificationManagerCompat.from(context).notify(notificationId, builder.build())
