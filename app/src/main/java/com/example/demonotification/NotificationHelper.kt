@@ -1,6 +1,7 @@
 package com.example.demonotification
 
 import android.Manifest
+import android.app.AlarmManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -14,6 +15,8 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.ContextCompat.getSystemService
+import androidx.core.net.toUri
 
 class NotificationHelper(private val context: Context) {
 
@@ -28,7 +31,7 @@ class NotificationHelper(private val context: Context) {
             val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
                 description = descriptionText
                 // Sử dụng âm thanh từ res/raw/alert
-                val customSoundUri: Uri = Uri.parse("android.resource://${context.packageName}/${R.raw.alert}")
+                val customSoundUri: Uri = "android.resource://${context.packageName}/${R.raw.alert}".toUri()
                 val audioAttributes = AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_NOTIFICATION)
                     .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)

@@ -175,6 +175,19 @@ class MainActivity : ComponentActivity() {
             Toast.makeText(this, "Lỗi khi lên lịch: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
+
+    private fun cancelNotification(requestCode: Int) {
+        val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val intent = Intent(this, NotificationReceiver::class.java)
+        val pendingIntent = PendingIntent.getBroadcast(
+            this,
+            requestCode,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        alarmManager.cancel(pendingIntent)
+        Toast.makeText(this, "Đã hủy thông báo", Toast.LENGTH_SHORT).show()
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
