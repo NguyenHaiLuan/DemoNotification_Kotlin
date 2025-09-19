@@ -59,6 +59,15 @@ class MainActivity : ComponentActivity() {
         notificationHelper = NotificationHelper(this)
         notificationHelper.createNotificationChannel()
 
+        // Xử lý dữ liệu từ PendingIntent (nếu có)
+        intent.extras?.let { extras ->
+            val title = extras.getString("notification_title")
+            val message = extras.getString("notification_message")
+            if (title != null && message != null) {
+                Toast.makeText(this, "Nhấn thông báo: $title - $message", Toast.LENGTH_LONG).show()
+            }
+        }
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(
                     this,
@@ -76,14 +85,23 @@ class MainActivity : ComponentActivity() {
                         onShowNotification = {
                             notificationHelper.showNotification(
                                 title = "HEHEHE",
-                                message = "Đây là thông báo từ app demo abcd djfnsdjk djfdkjf jdfsdkf oidfhasd jasdfnhs"
+                                message = "Đây là thông báo từ app demo abcd djfnsdjk djfdkjf jdfsdkf oidfhasd jasdfnhs",
+                                notificationId = 100 // ID riêng cho thông báo ngay
                             )
                         },
                         onScheduleNotification = {
-                            scheduleNotification(5_000L)
+                            scheduleNotification(5_000L, 0) // requestCode = 0
                         },
                         onScheduleSpecificTime = { hour, minute ->
-                            scheduleNotificationAtSpecificTime(hour, minute)
+                            scheduleNotificationAtSpecificTime(hour, minute, 1) // requestCode = 1
+                        },
+                        onOpenAlarmSettings = {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                                    putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                                }
+                                startActivity(intent)
+                            }
                         },
                         modifier = Modifier.padding(innerPadding),
                         context = this
@@ -93,7 +111,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun scheduleNotification(delayMillis: Long) {
+    private fun scheduleNotification(delayMillis: Long, requestCode: Int) {
         val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
@@ -108,10 +126,11 @@ class MainActivity : ComponentActivity() {
         val intent = Intent(this, NotificationReceiver::class.java).apply {
             putExtra("title", "Scheduled Notification")
             putExtra("message", "Đây là thông báo được lên lịch sau $delayMillis ms!")
+            putExtra("requestCode", requestCode) // Truyền requestCode
         }
         val pendingIntent = PendingIntent.getBroadcast(
             this,
-            0,
+            requestCode,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -130,7 +149,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun scheduleNotificationAtSpecificTime(hour: Int, minute: Int) {
+    private fun scheduleNotificationAtSpecificTime(hour: Int, minute: Int, requestCode: Int) {
         val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
@@ -145,11 +164,12 @@ class MainActivity : ComponentActivity() {
         val intent = Intent(this, NotificationReceiver::class.java).apply {
             putExtra("title", "Scheduled Notification")
             putExtra("message", "Thông báo được lên lịch vào ${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}!")
+            putExtra("requestCode", requestCode) // Truyền requestCode
         }
 
         val pendingIntent = PendingIntent.getBroadcast(
             this,
-            1,
+            requestCode,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -175,19 +195,6 @@ class MainActivity : ComponentActivity() {
             Toast.makeText(this, "Lỗi khi lên lịch: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
-
-    private fun cancelNotification(requestCode: Int) {
-        val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val intent = Intent(this, NotificationReceiver::class.java)
-        val pendingIntent = PendingIntent.getBroadcast(
-            this,
-            requestCode,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        alarmManager.cancel(pendingIntent)
-        Toast.makeText(this, "Đã hủy thông báo", Toast.LENGTH_SHORT).show()
-    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -196,11 +203,12 @@ fun Greeting(
     onShowNotification: () -> Unit,
     onScheduleNotification: () -> Unit,
     onScheduleSpecificTime: (hour: Int, minute: Int) -> Unit,
+    onOpenAlarmSettings: () -> Unit,
     modifier: Modifier = Modifier,
     context: Context
 ) {
     var showTimePicker by remember { mutableStateOf(false) }
-    val timePickerState = rememberTimePickerState()
+    val timePickerState = rememberTimePickerState(is24Hour = true)
 
     Column(
         modifier = modifier.fillMaxSize(),
@@ -239,6 +247,12 @@ fun Greeting(
             modifier = Modifier.padding(16.dp)
         ) {
             Text("Mở Cài Đặt Thông Báo")
+        }
+        Button(
+            onClick = onOpenAlarmSettings,
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text("Mở Cài Đặt Quyền Lên Lịch")
         }
     }
 
